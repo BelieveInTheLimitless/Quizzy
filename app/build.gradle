@@ -62,7 +62,6 @@ dependencies {
 
     //Dagger - Hilt
     implementation 'com.google.dagger:hilt-android:2.44.2'
-    //May need okkhttp also
 
 // Dagger - Hilt
     kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
