@@ -1,6 +1,7 @@
 package com.example.quizzy.di
 
 import com.example.quizzy.network.QuestionAPI
+import com.example.quizzy.repository.QuestionRepository
 import com.example.quizzy.util.Constants
 import dagger.Module
 import dagger.Provides
@@ -13,6 +14,11 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Singleton
+    @Provides
+    fun provideQuestionRepository(api: QuestionAPI) = QuestionRepository(api)
+
     @Singleton
     @Provides
     fun provideQuestionAPI(): QuestionAPI{
