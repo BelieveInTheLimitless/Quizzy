@@ -2,19 +2,31 @@ package com.example.quizzy.component
 
 import android.util.Log
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.RadioButton
+import androidx.compose.material.RadioButtonDefaults
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
@@ -25,6 +37,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.quizzy.model.QuestionItem
 import com.example.quizzy.screens.QuestionsViewModel
 import com.example.quizzy.util.AppColors
 
@@ -37,26 +50,105 @@ fun Questions(viewModel: QuestionsViewModel) {
         Log.d("loading", "Questions: Loading...")
     }
     else{
-        questions?.forEach{questionItem ->
-            Log.d("Result", "Questions: ${questionItem.question}")
+        if(questions != null){
+            QuestionDisplay(question = questions.first())
         }
     }
 }
 
-@Preview
+//@Preview
 @Composable
-fun QuestionDisplay(){
+fun QuestionDisplay(
+    question: QuestionItem,
+//    questionIndex: MutableState<Int>,
+//    viewModel: QuestionsViewModel = hiltViewModel(),
+    onNextClicked: (Int) -> Unit = {}
+){
+    val choicesState = listOf(question.A, question.B, question.C, question.D)
+
+    val answerState = remember(question){
+        mutableStateOf<Int?>(null)
+    }
+
+    val correctAnswerState = remember(question) {
+        mutableStateOf<Boolean?>(null)
+    }
+
+    val updateAnswer: (Int) -> Unit = remember(question) {
+        {
+            answerState.value = it
+            correctAnswerState.value = (it == (question.answer[0].code - 'A'.code))
+        }
+    }
+
     val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+
     Surface(modifier = Modifier
         .fillMaxWidth()
-        .fillMaxHeight()
-        .padding(4.dp),
+        .fillMaxHeight(),
         color = AppColors.mDarkPurple) {
         Column(modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start) {
             QuestionTracker()
             DrawDottedLine(pathEffect)
+
+            Column {
+                Text(text = question.question,
+                    modifier = Modifier
+                        .padding(6.dp)
+                        .align(alignment = Alignment.Start)
+                        .fillMaxHeight(0.3f),
+                    fontSize = 17.sp,
+                    color = AppColors.mOffWhite,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 27.sp
+                )
+
+                //choices
+                choicesState.forEachIndexed { index, answerText ->
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(5.dp)
+                        .height(45.dp)
+                        .border(
+                            width = 4.dp, brush = Brush.linearGradient(
+                                colors = listOf(AppColors.mOffDarkPurple, AppColors.mOffDarkPurple)
+                            ),
+                            shape = RoundedCornerShape(15.dp)
+                        )
+                        .clip(
+                            RoundedCornerShape(
+                                topStartPercent = 50,
+                                topEndPercent = 50,
+                                bottomStartPercent = 50,
+                                bottomEndPercent = 50
+                            )
+                        )
+                        .background(Color.Transparent)
+                        .clickable {
+                            updateAnswer(index)
+                        },
+                        verticalAlignment = Alignment.CenterVertically) {
+
+                        RadioButton(selected = answerState.value == index, onClick = {
+                            updateAnswer(index)
+                        },
+                            modifier = Modifier.padding(start = 16.dp),
+                            colors = RadioButtonDefaults
+                                .colors(selectedColor =
+                                if (correctAnswerState.value == true
+                                    && index == answerState.value){
+                                    Color.Green.copy(alpha = 0.2f)
+                                }else{
+                                    Color.Red.copy(alpha = 0.2f)
+                                }
+                                )
+                        )
+                        Text(text = answerText, color = AppColors.mOffWhite)
+                    }
+                }
+            }
         }
     }
 }
