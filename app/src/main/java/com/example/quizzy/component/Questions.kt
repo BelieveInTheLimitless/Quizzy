@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.ButtonDefaults.buttonColors
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.Surface
@@ -37,9 +38,9 @@ import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -77,7 +78,6 @@ fun Questions(viewModel: QuestionsViewModel) {
     }
 }
 
-//@Preview
 @Composable
 fun QuestionDisplay(
     question: QuestionItem,
@@ -113,7 +113,8 @@ fun QuestionDisplay(
         Column(modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start) {
-            QuestionTracker(counter = questionIndex.value+1, outOf = totalQuestions!!)
+            ShowProgress(questionIndex.value.toDouble()/ totalQuestions!!)
+            QuestionTracker(counter = questionIndex.value+1, outOf = totalQuestions)
             DrawDottedLine(pathEffect)
 
             Column {
@@ -198,7 +199,7 @@ fun QuestionDisplay(
                         .align(alignment = Alignment.CenterHorizontally),
                         enabled = answerState.value != null,
                         shape = RoundedCornerShape(35.dp),
-                    colors = ButtonDefaults.buttonColors(
+                    colors = buttonColors(
                         backgroundColor = AppColors.mLightBlue
                     )
                 ) {
@@ -225,10 +226,63 @@ fun DrawDottedLine(pathEffect: PathEffect){
     }
 }
 
-@Preview
 @Composable
-fun QuestionTracker(counter: Int = 10,
-                    outOf: Int = 100){
+fun ShowProgress(score: Double){
+
+    val gradient = Brush.linearGradient(listOf(Color(0xFFF95075),
+        Color(0xFF6B0BAF)
+    ))
+
+    Row(modifier = Modifier
+        .padding(10.dp)
+        .fillMaxWidth()
+        .height(45.dp)
+        .border(
+            width = 4.dp,
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    AppColors.mLightPurple,
+                    AppColors.mLightPurple
+                )
+            ),
+            shape = RoundedCornerShape(34.dp)
+        )
+        .clip(
+            RoundedCornerShape(
+                topStartPercent = 50,
+                topEndPercent = 50,
+                bottomStartPercent = 50,
+                bottomEndPercent = 50
+            )
+        ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Button(onClick = {},
+            modifier = Modifier
+                .fillMaxWidth(score.toFloat())
+                .background(brush = gradient),
+            enabled = false,
+            contentPadding = PaddingValues(1.dp),
+            elevation = null,
+            colors = buttonColors(backgroundColor = Color.Transparent,
+                disabledBackgroundColor = Color.Transparent
+            )
+        ) {
+            Text(text = (score*100).toInt().toString()+"%"
+            , modifier = Modifier
+                .clip(shape = RoundedCornerShape(23.dp))
+                    .fillMaxHeight(0.87f)
+                    .fillMaxWidth()
+                    .padding(6.dp),
+                color = AppColors.mOffWhite,
+                textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+fun QuestionTracker(counter: Int,
+                    outOf: Int){
     Text(text = buildAnnotatedString {
         withStyle(style = ParagraphStyle(textIndent = TextIndent.None)){
             withStyle(style = SpanStyle(color = AppColors.mLightGray,
