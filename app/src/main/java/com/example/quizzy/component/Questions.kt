@@ -1,6 +1,5 @@
 package com.example.quizzy.component
 
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,12 +12,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.RadioButton
-import androidx.compose.material.RadioButtonDefaults
+import androidx.compose.material.Icon
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,21 +42,37 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.quizzy.model.QuestionItem
 import com.example.quizzy.screens.QuestionsViewModel
 import com.example.quizzy.util.AppColors
 
 @Composable
 fun Questions(viewModel: QuestionsViewModel) {
+
     val questions = viewModel.data.value.data?.toMutableList()
+
+    val questionIndex = remember {
+        mutableIntStateOf(0)
+    }
 
     if (viewModel.data.value.loading == true) {
         CircularProgressIndicator()
-        Log.d("loading", "Questions: Loading...")
     }
     else{
+        val question = try {
+            questions?.get(questionIndex.intValue)
+        }
+        catch (e: Exception){
+            null
+        }
+
         if(questions != null){
-            QuestionDisplay(question = questions.first())
+            QuestionDisplay(question = question!!,
+                questionIndex = questionIndex,
+                viewModel = viewModel){
+                questionIndex.intValue = questionIndex.intValue+1
+            }
         }
     }
 }
@@ -60,8 +81,8 @@ fun Questions(viewModel: QuestionsViewModel) {
 @Composable
 fun QuestionDisplay(
     question: QuestionItem,
-//    questionIndex: MutableState<Int>,
-//    viewModel: QuestionsViewModel = hiltViewModel(),
+    questionIndex: MutableState<Int>,
+    viewModel: QuestionsViewModel = hiltViewModel(),
     onNextClicked: (Int) -> Unit = {}
 ){
     val choicesState = listOf(question.A, question.B, question.C, question.D)
@@ -83,6 +104,8 @@ fun QuestionDisplay(
 
     val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
 
+    val totalQuestions = viewModel.data.value.data?.size
+
     Surface(modifier = Modifier
         .fillMaxWidth()
         .fillMaxHeight(),
@@ -90,7 +113,7 @@ fun QuestionDisplay(
         Column(modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start) {
-            QuestionTracker()
+            QuestionTracker(counter = questionIndex.value+1, outOf = totalQuestions!!)
             DrawDottedLine(pathEffect)
 
             Column {
@@ -131,22 +154,58 @@ fun QuestionDisplay(
                         },
                         verticalAlignment = Alignment.CenterVertically) {
 
-                        RadioButton(selected = answerState.value == index, onClick = {
-                            updateAnswer(index)
-                        },
-                            modifier = Modifier.padding(start = 16.dp),
-                            colors = RadioButtonDefaults
-                                .colors(selectedColor =
-                                if (correctAnswerState.value == true
+                        if (correctAnswerState.value == true && index == answerState.value){
+                            Icon(imageVector = Icons.Default.RadioButtonChecked,
+                                contentDescription = "Unchecked Radio button",
+                                modifier = Modifier.padding(start = 10.dp),
+                                tint = Color.Green)
+                        }else if(correctAnswerState.value == false && index == answerState.value){
+                            Icon(imageVector = Icons.Default.RadioButtonChecked,
+                                modifier = Modifier.padding(start = 10.dp),
+                                contentDescription = "Unchecked Radio button",
+                                tint = Color.Red)
+                        } else {
+                            Icon(imageVector = Icons.Default.RadioButtonUnchecked,
+                                contentDescription = "Unchecked Radio button",
+                                modifier = Modifier.padding(start = 10.dp),
+                                tint = AppColors.mOffWhite)
+                        }
+
+                        val annotatedString = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Light,
+                                color = (if (correctAnswerState.value == true
                                     && index == answerState.value){
-                                    Color.Green.copy(alpha = 0.2f)
-                                }else{
-                                    Color.Red.copy(alpha = 0.2f)
+                                    Color.Green
+                                }else if(correctAnswerState.value == false
+                                    && index == answerState.value){
+                                    Color.Red
+                                } else {
+                                    AppColors.mOffWhite
                                 }
-                                )
-                        )
-                        Text(text = answerText, color = AppColors.mOffWhite)
+                            ),
+                                fontSize = 17.sp)){
+                                append(answerText)
+                            }
+                        }
+                        Text(text = annotatedString, modifier = Modifier.padding(6.dp))
                     }
+                }
+                Button(onClick = {
+                                 onNextClicked(questionIndex.value)
+                                 },
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .align(alignment = Alignment.CenterHorizontally),
+                        enabled = answerState.value != null,
+                        shape = RoundedCornerShape(35.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = AppColors.mLightBlue
+                    )
+                ) {
+                    Text(text = "Next",
+                        modifier = Modifier.padding(4.dp),
+                        color = AppColors.mOffWhite,
+                        fontSize = 17.sp)
                 }
             }
         }
